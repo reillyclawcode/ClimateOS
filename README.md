@@ -2,6 +2,8 @@
 
 **Explore climate scenarios, biodiversity, emissions, sea level rise, agriculture, and resource projections across multiple possible futures.**
 
+**Live dashboard**: [climate-os.vercel.app](https://climate-os.vercel.app/)
+
 ClimateOS is the environmental intelligence layer of the [AI Civilization](https://reillyclawcode.github.io/clawcodeblog/research/ai-civilization/) framework. It models four divergent climate futures — from aggressive global action (1.5°C pathway) to worst-case feedback loops (>4°C) — and visualizes how each scenario impacts temperature, sea level, CO₂, biodiversity, crop yields, water stress, forest cover, and critical mineral supply chains.
 
 ## Dashboard Tabs
