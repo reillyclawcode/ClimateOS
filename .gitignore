@@ -1,15 +1,2 @@
-# Node / JS
 node_modules/
-dist/
-
-# Python
-__pycache__/
-*.pyc
-
-# Env
-.env
-.env.*
-
-# OS
-.DS_Store
-Thumbs.db
+.next/
