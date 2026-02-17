@@ -112,7 +112,7 @@ export default function Home() {
     { id: "timeline", label: "Timeline", icon: "\u{1F3AF}" },
   ];
 
-  const riskColor = (r: string) => r === "critical" ? "#f43f5e" : r === "high" ? "#f59e0b" : r === "moderate" ? "#0ea5e9" : "#10b981";
+  const riskColor = (r: string) => r === "triggered" ? "#991b1b" : r === "critical" ? "#f43f5e" : r === "very high" ? "#ef4444" : r === "high" ? "#f59e0b" : r === "moderate" ? "#0ea5e9" : r === "low" ? "#10b981" : "#10b981";
   const statusColor = (s: string) =>
     s === "collapsed" ? "#991b1b" : s === "critical" ? "#f43f5e" : s === "severe" ? "#f59e0b" : s === "stressed" ? "#fb923c" : s === "declining" ? "#0ea5e9" : s === "stabilizing" ? "#38bdf8" : s === "recovering" ? "#10b981" : s === "thriving" ? "#22c55e" : "#94a3b8";
 
@@ -151,22 +151,95 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 mt-8">
 
         {/* ════════════════════ OVERVIEW ════════════════════ */}
-        {tab === "overview" && (
+        {tab === "overview" && (() => {
+          const s = data.scenarios.find(sc => sc.id === activeScenario)!;
+          const overviewStats2050: Record<string, { temp: string; co2: string; emissions: string; renewPct: string; forest: string; water: string; displaced: string; finance: string }> = {
+            aggressive: { temp: "+1.2", co2: "366", emissions: "3.4", renewPct: "99", forest: "42.3", water: "15", displaced: "5", finance: "5.2" },
+            moderate: { temp: "+1.8", co2: "395", emissions: "17.8", renewPct: "88", forest: "35.3", water: "25", displaced: "35", finance: "3.5" },
+            bau: { temp: "+3.0", co2: "551", emissions: "26.1", renewPct: "64", forest: "21.3", water: "56", displaced: "150", finance: "1.8" },
+            worst: { temp: "+4.6", co2: "790", emissions: "40.0", renewPct: "42", forest: "8.5", water: "88", displaced: "500", finance: "0.6" },
+          };
+          const st = overviewStats2050[s.id];
+          const tpScenario: Record<string, Record<string, { risk: string; outcome: string }>> = {
+            "Amazon Dieback": {
+              aggressive: { risk: "low", outcome: "Avoided. Deforestation halted and reversed. Forest stabilized at 12% cleared, well below threshold." },
+              moderate: { risk: "moderate", outcome: "Narrowly avoided. Deforestation slowed to 18% but drought stress persists. Razor-thin margin." },
+              bau: { risk: "very high", outcome: "Likely triggered by early 2040s. 22%+ cleared. Irreversible transition to savanna underway." },
+              worst: { risk: "triggered", outcome: "Fully triggered. 40%+ deforested. Amazon transitioning to dry savanna. Releasing 100+ Gt CO\u2082." },
+            },
+            "Ice Sheet Collapse": {
+              aggressive: { risk: "low", outcome: "Stabilized. Temperature at +1.2\u00b0C holds ice sheets. Greenland melt slows. Antarctica stable." },
+              moderate: { risk: "moderate", outcome: "Greenland accelerating slowly. West Antarctica showing stress. Multi-century commitment to 1\u20132m rise." },
+              bau: { risk: "high", outcome: "West Antarctic Ice Sheet dynamics accelerating. 3\u20135m eventual rise committed. Rate increasing." },
+              worst: { risk: "triggered", outcome: "Partial WAIS collapse underway. 1m+ rise by 2050. 5\u201315m committed over centuries." },
+            },
+            "Permafrost Thaw": {
+              aggressive: { risk: "low", outcome: "Limited to discontinuous permafrost zone. Methane release contained. +1.2\u00b0C limits deep thaw." },
+              moderate: { risk: "moderate", outcome: "Continuous thaw in southern permafrost. 50\u2013100 Gt CO\u2082-equivalent released by 2050. Manageable." },
+              bau: { risk: "high", outcome: "Widespread thaw across 40% of permafrost. 200+ Gt release by 2050. Self-reinforcing feedback loop active." },
+              worst: { risk: "triggered", outcome: "Catastrophic thaw. Methane and CO\u2082 release rivals 10%+ of human emissions. Unstoppable." },
+            },
+            "Coral Reef Die-off": {
+              aggressive: { risk: "low", outcome: "Partial recovery underway. Bleaching events declining. Assisted evolution showing results." },
+              moderate: { risk: "high", outcome: "Tropical reefs in severe decline. Cooler-water reefs stabilizing. ~40% of reef range persists." },
+              bau: { risk: "very high", outcome: "Functionally extinct in tropics by 2045. Only high-latitude refugia remain." },
+              worst: { risk: "triggered", outcome: "Total reef collapse. 95%+ gone. Ocean acidification at 790 ppm dissolves remaining structures." },
+            },
+            "Atlantic Circulation Slowdown": {
+              aggressive: { risk: "low", outcome: "AMOC weakens slightly but stabilizes. Temperature control prevents major freshwater influx." },
+              moderate: { risk: "moderate", outcome: "AMOC slows 20\u201330%. European winters become more variable. Gulf Stream shifts detectable." },
+              bau: { risk: "high", outcome: "AMOC slows 40\u201350%. Northern European cooling despite global warming. Disrupted weather patterns." },
+              worst: { risk: "very high", outcome: "AMOC collapse possible by 2050. Dramatic regional climate shifts. European agriculture disrupted." },
+            },
+            "Monsoon Disruption": {
+              aggressive: { risk: "low", outcome: "Monsoon patterns stabilize. Slight intensification managed through infrastructure. 2B people protected." },
+              moderate: { risk: "moderate", outcome: "Monsoon becoming more erratic. Dry spells lengthen, wet periods intensify. Adaptation required." },
+              bau: { risk: "high", outcome: "Monsoon destabilization affecting 2B+ people. Crop failures from timing shifts. Flood/drought cycles." },
+              worst: { risk: "very high", outcome: "Fundamental monsoon disruption. South Asian agriculture in crisis. Mass displacement from floods and droughts." },
+            },
+          };
+          const overviewDesc: Record<string, string> = {
+            aggressive: "Under Aggressive Action, the planet in 2050 is on a recovery trajectory. Temperature has stabilized and is beginning to decline. CO\u2082 is falling. Forests are expanding. Biodiversity is recovering. The energy transition is complete. Every tipping point has been avoided. This future requires unprecedented coordination but is physically and economically achievable.",
+            moderate: "The Moderate Transition delivers a planet under stress but stabilizing. Temperature approaches 2\u00b0C. CO\u2082 has peaked. Most tipping points are avoided, though narrowly. The energy transition is largely complete. Resources are strained but managed. This is the Paris Agreement scenario \u2014 achievable with sustained political will.",
+            bau: "Business as Usual in 2050 is a world of compounding crises. At +3\u00b0C, multiple tipping points are triggered. Half of biodiversity is gone. A billion people face hunger. Water stress affects the majority. The climate system is in a state that will persist for millennia. This is the default trajectory of current policies.",
+            worst: "The Worst Case is civilizational crisis. At +4.6\u00b0C, feedback loops have taken warming beyond human control. Every system \u2014 food, water, energy, ecosystems, governance \u2014 is under existential stress. This is not prediction but warning: this is what we risk if coordination fails and tipping points cascade.",
+          };
+          return (
           <section>
-            <Heading icon={"\u{1F4CA}"} title="Climate Dashboard" sub="Current state of the planet and key indicators" />
+            <Heading icon={"\u{1F4CA}"} title="Climate Dashboard" sub="Planetary indicators, tipping points, and scenario projections \u2014 toggle to compare futures" />
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+            {/* Scenario selector */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              {data.scenarios.map(sc => (
+                <button key={sc.id} onClick={() => setActiveScenario(sc.id)} className={`glass-card p-3 text-left w-full transition-all hover:border-white/20 ${activeScenario === sc.id ? "ring-2" : ""}`} style={activeScenario === sc.id ? { borderColor: `${sc.color}55`, boxShadow: `0 0 20px ${sc.color}11` } : {}}>
+                  <div className="flex items-center gap-2"><span className="text-lg">{sc.icon}</span><span className="text-xs font-semibold" style={{ color: sc.color }}>{sc.name}</span></div>
+                  <p className="text-[10px] mt-1" style={{ color: "var(--text-faint)" }}>{sc.desc.slice(0, 60)}...</p>
+                </button>
+              ))}
+            </div>
+
+            {/* 2024 baseline stats */}
+            <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>2024 Baseline (today)</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <Stat label="Global Temp Rise" value={`+${data.metrics.globalTemp2024}\u00b0C`} sub="vs pre-industrial" color="var(--rose)" />
               <Stat label="CO\u2082 Concentration" value={`${data.metrics.co2ppm2024} ppm`} sub="atmospheric" color="var(--amber)" />
               <Stat label="Annual Emissions" value={`${data.metrics.annualEmissions_gt} Gt`} sub="CO\u2082/year" color="var(--teal)" />
               <Stat label="Renewable Capacity" value={`${fmtK(data.metrics.renewableCapacity_gw)} GW`} sub="installed globally" color="var(--emerald)" />
             </div>
 
+            {/* 2050 projected stats */}
+            <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: s.color }}>2050 Projection: {s.name}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <Stat label="Global Temp Rise" value={`${st.temp}\u00b0C`} sub="by 2050" color="var(--rose)" />
+              <Stat label="CO\u2082 Concentration" value={`${st.co2} ppm`} sub="by 2050" color="var(--amber)" />
+              <Stat label="Annual Emissions" value={`${st.emissions} Gt`} sub="CO\u2082/year" color="var(--teal)" />
+              <Stat label="Renewables" value={`${st.renewPct}%`} sub="of electricity" color="var(--emerald)" />
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-              <Stat label="Forest Cover" value={`${data.metrics.forestCoverPct}%`} sub="of land surface" color="var(--emerald)" />
-              <Stat label="Water Stress" value={`${data.metrics.waterStressPct}%`} sub="of population" color="var(--sky)" />
-              <Stat label="Climate Displaced" value={`${data.metrics.climateDisplaced_m}M`} sub="people/year" color="var(--rose)" />
-              <Stat label="Green Finance" value={`$${data.metrics.greenFinance_t}T`} sub="annual flows" color="var(--teal)" />
+              <Stat label="Forest Cover" value={`${st.forest}%`} sub="of land surface" color="var(--emerald)" />
+              <Stat label="Water Stress" value={`${st.water}%`} sub="of population" color="var(--sky)" />
+              <Stat label="Climate Displaced" value={`${st.displaced}M`} sub="people/year" color="var(--rose)" />
+              <Stat label="Green Finance" value={`$${st.finance}T`} sub="annual flows" color="var(--teal)" />
             </div>
 
             {/* Temperature scenario preview */}
@@ -180,34 +253,51 @@ export default function Home() {
                   <YAxis domain={[1, 5]} tick={{ fill: "#94a3b8", fontSize: 11 }} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: "11px" }} />
-                  {data.scenarios.map(s => (
-                    <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2} dot={false} name={s.name} />
+                  {data.scenarios.map(sc => (
+                    <Line key={sc.id} type="monotone" dataKey={sc.id} stroke={sc.color} strokeWidth={activeScenario === sc.id ? 3 : 1.5} strokeOpacity={activeScenario === sc.id ? 1 : 0.4} dot={false} name={sc.name} />
                   ))}
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Tipping points */}
-            <div className="glass-card p-6">
-              <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text)" }}>Climate Tipping Points</h3>
+            {/* Tipping points — scenario-aware */}
+            <div className="glass-card p-6 mb-8">
+              <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Climate Tipping Points</h3>
+              <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>Status under <strong style={{ color: s.color }}>{s.name}</strong> by 2050</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.tippingPoints.map(tp => (
-                  <div key={tp.name} className="glass-card p-4" style={{ borderLeft: `3px solid ${tp.color}` }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">{tp.icon}</span>
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>{tp.name}</p>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${riskColor(tp.risk)}22`, color: riskColor(tp.risk), border: `1px solid ${riskColor(tp.risk)}44` }}>{tp.risk}</span>
+                {data.tippingPoints.map(tp => {
+                  const tpS = tpScenario[tp.name]?.[s.id] || { risk: tp.risk, outcome: "" };
+                  return (
+                    <div key={tp.name} className="glass-card p-4" style={{ borderLeft: `3px solid ${tp.color}` }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">{tp.icon}</span>
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>{tp.name}</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${riskColor(tpS.risk)}22`, color: riskColor(tpS.risk), border: `1px solid ${riskColor(tpS.risk)}44` }}>{tpS.risk}</span>
+                        </div>
                       </div>
+                      <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>Threshold:</strong> {tp.threshold}</p>
+                      {tpS.outcome ? (
+                        <p className="text-[11px] leading-relaxed mt-2 pt-2" style={{ color: "var(--text-muted)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>{tpS.outcome}</p>
+                      ) : (
+                        <p className="text-xs" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>Impact:</strong> {tp.impact}</p>
+                      )}
                     </div>
-                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>Threshold:</strong> {tp.threshold}</p>
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>Impact:</strong> {tp.impact}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
+
+            {/* Overview summary */}
+            <div className="glass-card p-6" style={{ borderLeft: `3px solid ${s.color}` }}>
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: s.color, fontFamily: "'Space Grotesk',sans-serif" }}>
+                <span className="text-lg">{s.icon}</span> The Planet in 2050: {s.name}
+              </h3>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{overviewDesc[s.id]}</p>
+            </div>
           </section>
-        )}
+          );
+        })()}
 
         {/* ════════════════════ SCENARIOS ════════════════════ */}
         {tab === "scenarios" && (
@@ -514,27 +604,77 @@ export default function Home() {
               <p className="text-xs leading-relaxed mt-4" style={{ color: "var(--text-muted)" }}>{forestBioDesc[s.id]}</p>
             </div>
 
-            {/* Restoration Projects */}
-            <div className="glass-card p-6 mb-8">
-              <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text)" }}>Global Restoration Projects</h3>
-              <div className="space-y-4">
-                {data.biodiversity.restorationProjects.map(rp => (
-                  <div key={rp.name} className="flex items-center gap-4">
-                    <div className="w-40 shrink-0">
-                      <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>{rp.name}</p>
-                      <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{rp.target}</p>
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${rp.progress}%`, background: "var(--teal)", opacity: 0.7 }} />
+            {/* Restoration Projects — scenario-aware */}
+            {(() => {
+              const rpScenario: Record<string, Record<string, { progress: number; status: string; note: string }>> = {
+                "Great Green Wall (Sahel)": {
+                  aggressive: { progress: 95, status: "thriving", note: "8,000 km restored. Sahel greening accelerates. 20M livelihoods secured." },
+                  moderate: { progress: 55, status: "recovering", note: "4,400 km restored. Progress steady but funding gaps in eastern sections." },
+                  bau: { progress: 22, status: "stressed", note: "1,760 km restored. Desertification outpacing restoration in some regions." },
+                  worst: { progress: 8, status: "collapsed", note: "640 km restored but drought reverses gains. Sahel desertification accelerates." },
+                },
+                "Trillion Tree Initiative": {
+                  aggressive: { progress: 100, status: "thriving", note: "1 trillion trees planted and surviving. Net forest gain of 11% of land area." },
+                  moderate: { progress: 60, status: "recovering", note: "600B trees. Strong in temperate zones. Tropical planting hampered by land pressure." },
+                  bau: { progress: 25, status: "stressed", note: "250B trees. Planting continues but deforestation elsewhere erases 60% of gains." },
+                  worst: { progress: 5, status: "collapsed", note: "50B trees. Mega-fires and drought kill planted forests faster than they grow." },
+                },
+                "Ocean Cleanup": {
+                  aggressive: { progress: 75, status: "recovering", note: "75% of ocean plastic removed. Microplastic filtration at river mouths. Production bans." },
+                  moderate: { progress: 35, status: "stressed", note: "35% removed. Great Pacific patch shrinking. New plastic still entering at 5M tons/yr." },
+                  bau: { progress: 10, status: "critical", note: "10% removed. Cleanup can\u2019t keep pace with 11M tons/yr of new plastic entering oceans." },
+                  worst: { progress: 3, status: "collapsed", note: "Negligible. Ocean plastic mass has tripled. Cleanup programs defunded." },
+                },
+                "Coral Reef Restoration": {
+                  aggressive: { progress: 65, status: "recovering", note: "65% of target reef recovery. Assisted evolution + thermal tolerance breeding working." },
+                  moderate: { progress: 25, status: "stressed", note: "25% recovery. Cooler-water reefs responding. Tropical reefs still declining." },
+                  bau: { progress: 5, status: "critical", note: "5% recovery. Bleaching events overwhelm restoration. Tropical reefs functionally extinct." },
+                  worst: { progress: 0, status: "collapsed", note: "Restoration abandoned. 95%+ reefs dead. Ocean acidification prevents regrowth." },
+                },
+                "Rewilding Europe": {
+                  aggressive: { progress: 90, status: "thriving", note: "900K hectares rewilded. Wildlife corridors reconnect continent. Apex predators returning." },
+                  moderate: { progress: 50, status: "recovering", note: "500K hectares. Western Europe strong. Eastern Europe progressing with EU funding." },
+                  bau: { progress: 20, status: "stressed", note: "200K hectares. Agricultural pressure limits expansion. Fragmented corridors." },
+                  worst: { progress: 5, status: "critical", note: "50K hectares. Drought and fire push rewilded areas back. Funding redirected to crisis." },
+                },
+                "Mangrove Alliance": {
+                  aggressive: { progress: 85, status: "thriving", note: "85% of mangrove restoration target. Blue carbon sequestration exceeds projections." },
+                  moderate: { progress: 40, status: "recovering", note: "40% restored. Southeast Asia and West Africa showing strong results." },
+                  bau: { progress: 12, status: "declining", note: "12% restored but sea level rise and development destroying more than is restored." },
+                  worst: { progress: 2, status: "collapsed", note: "Negligible. 1m sea level rise drowning mangroves faster than migration." },
+                },
+              };
+              return (
+              <div className="glass-card p-6 mb-8">
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Global Restoration Projects</h3>
+                <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>2050 progress under <strong style={{ color: s.color }}>{s.name}</strong></p>
+                <div className="space-y-5">
+                  {data.biodiversity.restorationProjects.map(rp => {
+                    const rs = rpScenario[rp.name]?.[s.id] || { progress: rp.progress, status: "baseline", note: "" };
+                    const barColor = rs.progress >= 60 ? "var(--emerald)" : rs.progress >= 30 ? "var(--amber)" : "var(--rose)";
+                    return (
+                      <div key={rp.name}>
+                        <div className="flex items-center gap-4">
+                          <div className="w-40 shrink-0">
+                            <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>{rp.name}</p>
+                            <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{rp.target}</p>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${rs.progress}%`, background: barColor, opacity: 0.7 }} />
+                            </div>
+                          </div>
+                          <div className="w-12 text-right text-xs font-bold" style={{ color: barColor }}>{rs.progress}%</div>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full w-20 text-center" style={{ background: `${statusColor(rs.status)}22`, color: statusColor(rs.status), border: `1px solid ${statusColor(rs.status)}44` }}>{rs.status}</span>
+                        </div>
+                        {rs.note && <p className="text-[11px] mt-1 ml-44 leading-relaxed" style={{ color: "var(--text-muted)" }}>{rs.note}</p>}
                       </div>
-                    </div>
-                    <div className="w-12 text-right text-xs font-bold" style={{ color: "var(--teal)" }}>{rp.progress}%</div>
-                    <div className="w-20 text-right text-[10px]" style={{ color: "var(--text-faint)" }}>${fmtK(rp.investment_m * 1_000_000)}</div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+              );
+            })()}
 
             {/* Summary */}
             <div className="glass-card p-6" style={{ borderLeft: `3px solid ${s.color}` }}>
