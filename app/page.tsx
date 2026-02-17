@@ -113,7 +113,8 @@ export default function Home() {
   ];
 
   const riskColor = (r: string) => r === "critical" ? "#f43f5e" : r === "high" ? "#f59e0b" : r === "moderate" ? "#0ea5e9" : "#10b981";
-  const statusColor = (s: string) => s === "critical" ? "#f43f5e" : s === "severe" ? "#f59e0b" : s === "declining" ? "#0ea5e9" : s === "recovering" ? "#10b981" : "#94a3b8";
+  const statusColor = (s: string) =>
+    s === "collapsed" ? "#991b1b" : s === "critical" ? "#f43f5e" : s === "severe" ? "#f59e0b" : s === "stressed" ? "#fb923c" : s === "declining" ? "#0ea5e9" : s === "stabilizing" ? "#38bdf8" : s === "recovering" ? "#10b981" : s === "thriving" ? "#22c55e" : "#94a3b8";
 
   return (
     <main className="min-h-screen pb-20">
@@ -408,25 +409,72 @@ export default function Home() {
               <Stat label="Protected Ocean" value={`${data.biodiversity.protectedOceanPct}%`} sub={`target: ${data.biodiversity.targetProtectedPct}%`} color="var(--sky)" />
             </div>
 
-            {/* Key Ecosystems */}
-            <div className="glass-card p-6 mb-8">
-              <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text)" }}>Key Ecosystem Status</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.biodiversity.keyEcosystems.map(eco => (
-                  <div key={eco.name} className="glass-card p-4" style={{ borderLeft: `3px solid ${eco.color}` }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">{eco.icon}</span>
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>{eco.name}</p>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${statusColor(eco.status)}22`, color: statusColor(eco.status), border: `1px solid ${statusColor(eco.status)}44` }}>{eco.status}</span>
+            {/* Key Ecosystems — scenario-aware */}
+            {(() => {
+              const ecoScenarioData: Record<string, Record<string, { status: string; current: string; outlook: string }>> = {
+                "Amazon Rainforest": {
+                  aggressive: { status: "recovering", current: "Deforestation halted; 12% reforested since 2026", outlook: "Stabilized well below the 20\u201325% dieback threshold. Indigenous land management and restoration corridors reconnect fragmented areas. The Amazon returns to being a net carbon sink by the late 2030s." },
+                  moderate: { status: "stressed", current: "Deforestation slowed to 0.3%/yr; 18% cleared", outlook: "Narrowly avoids tipping point. Commodity-driven clearing curtailed but drought frequency rising. Ecosystem function intact but fragile \u2014 one severe drought season away from irreversible change." },
+                  bau: { status: "critical", current: "22% deforested \u2014 approaching tipping point", outlook: "Crosses the 20\u201325% dieback threshold in the early 2040s. Begins irreversible transition from rainforest to savanna, releasing 30\u201350 Gt of stored carbon. Rainfall patterns shift across South America." },
+                  worst: { status: "collapsed", current: "40%+ deforested \u2014 dieback underway", outlook: "Full dieback in progress. The Amazon is transitioning to dry savanna, releasing over 100 Gt of carbon. Regional rainfall has collapsed. This is irreversible on any human timescale." },
+                },
+                "Coral Reefs": {
+                  aggressive: { status: "recovering", current: "Bleaching events declining; 35% recovery", outlook: "Ocean temperatures stabilizing at +1.2\u00b0C allows partial reef recovery. Assisted evolution and coral gardening programs show results. Full recovery will take decades, but the trajectory has reversed." },
+                  moderate: { status: "severe", current: "60% bleached; tropical reefs declining", outlook: "At +1.8\u00b0C, tropical reefs continue to degrade but cooler-water reefs stabilize. Mass bleaching events become less frequent after 2040. Functional reef ecosystems persist in ~40% of current range." },
+                  bau: { status: "critical", current: "80% bleached; functional extinction in tropics", outlook: "At +3\u00b0C, coral reefs are functionally extinct in tropical waters by 2045. Remaining reefs are limited to high-latitude refugia. Marine biodiversity collapses as reef ecosystems disappear." },
+                  worst: { status: "collapsed", current: "95%+ bleached; reefs functionally extinct", outlook: "Total reef collapse. Ocean acidification at 790 ppm dissolves calcium carbonate structures. The entire reef ecosystem \u2014 supporting 25% of marine species \u2014 is gone. Irreversible." },
+                },
+                "Arctic Sea Ice": {
+                  aggressive: { status: "stabilizing", current: "Summer minimum stabilized at 3.8M km\u00b2", outlook: "Temperature stabilization at +1.2\u00b0C prevents ice-free summers. Multi-year ice begins slow recovery. Arctic ecosystems face reduced pressure. The albedo feedback loop is contained." },
+                  moderate: { status: "declining", current: "Summer minimum 2.5M km\u00b2; seasonal ice-free likely", outlook: "First ice-free September expected by late 2030s but winter refreezing continues. Arctic shipping routes open seasonally. Polar bear and seal populations decline but persist." },
+                  bau: { status: "critical", current: "Ice-free summers by 2035; winter ice thinning", outlook: "Arctic is routinely ice-free in summer. Winter ice coverage shrinks to 60% of historical range. Albedo feedback accelerates warming by an additional 0.3\u00b0C. Arctic ecosystems undergo fundamental transformation." },
+                  worst: { status: "collapsed", current: "Near year-round ice loss; permafrost thaw accelerating", outlook: "Arctic ice effectively gone in summer and severely diminished in winter. Massive permafrost thaw releases methane and CO\u2082 at scale. The Arctic amplifies global warming rather than moderating it." },
+                },
+                "Boreal Forests": {
+                  aggressive: { status: "recovering", current: "Fire management effective; 15% stressed", outlook: "Reduced warming limits wildfire expansion. Permafrost stabilizes in most areas. Managed forestry and fire prevention allow boreal ecosystems to adapt. The boreal zone remains the world\u2019s largest terrestrial carbon sink." },
+                  moderate: { status: "stressed", current: "30% stressed; wildfire seasons lengthening", outlook: "Wildfire area doubles from 2026 levels but active management prevents catastrophic loss. Permafrost thaw accelerates in discontinuous zone. Southern boreal boundary shifts northward by 100\u2013200 km." },
+                  bau: { status: "critical", current: "50% stressed; mega-fires annual occurrence", outlook: "Boreal forests enter a fire-dominated regime. Permafrost thaw across 40% of the zone releases 50\u2013100 Gt of stored carbon by 2050. Southern boreal forests die back, replaced by grassland and shrub." },
+                  worst: { status: "collapsed", current: "70%+ stressed; large-scale dieback", outlook: "Boreal forests in active collapse. Unprecedented mega-fires burn areas the size of countries annually. Permafrost thaw is self-reinforcing. The boreal zone flips from carbon sink to carbon source, accelerating warming by an additional 0.5\u00b0C+." },
+                },
+                "Wetlands": {
+                  aggressive: { status: "recovering", current: "Restoration active; 13.5M km\u00b2", outlook: "Wetland restoration becomes a priority for carbon sequestration and water management. Protected area expansion covers 30% of remaining wetlands. Net wetland area increases for the first time in 50 years." },
+                  moderate: { status: "declining", current: "12.1M km\u00b2; loss rate halved", outlook: "Wetland loss slows but doesn\u2019t stop. Agricultural drainage continues in developing nations. Water table management improves in developed nations. Peatlands remain under pressure from drainage and fire." },
+                  bau: { status: "critical", current: "9.5M km\u00b2; 22% lost since 2026", outlook: "Continued drainage for agriculture, water table drops from groundwater overuse, and peatland fires destroy wetlands at accelerating pace. Peat decomposition releases 2\u20134 Gt CO\u2082/year." },
+                  worst: { status: "collapsed", current: "6M km\u00b2; 50% lost since 2026", outlook: "Catastrophic wetland loss. Peatlands dry out and burn across Southeast Asia, Russia, and Africa. Freshwater filtration services fail. Migratory bird populations collapse. Wetland carbon stores released at scale." },
+                },
+                "Mangroves": {
+                  aggressive: { status: "thriving", current: "50% restoration achieved; expanding", outlook: "Global Mangrove Alliance targets met. Coastal protection and blue carbon sequestration drive investment. Mangrove coverage exceeds 2000 levels. Coastal communities benefit from storm protection and fisheries recovery." },
+                  moderate: { status: "recovering", current: "Restoration gaining pace; net stable", outlook: "Mangrove loss halted in most regions. Restoration programs show results in Southeast Asia and West Africa. Sea level rise at 136mm is manageable for most mangrove systems." },
+                  bau: { status: "declining", current: "15% lost since 2026; coastal squeeze", outlook: "Sea level rise and coastal development squeeze mangroves from both sides. Aquaculture and urban expansion continue to destroy mangrove habitat in Southeast Asia. Coastal flooding risk increases for 100M+ people." },
+                  worst: { status: "critical", current: "40% lost; sea level rise overwhelming", outlook: "Over 1 meter of sea level rise drowns mangrove systems faster than they can migrate inland. Coastal development blocks retreat. Mangrove ecosystems collapse across low-lying tropical coasts." },
+                },
+              };
+              return (
+              <div className="glass-card p-6 mb-8">
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Key Ecosystem Status</h3>
+                <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>Projected 2050 state under <strong style={{ color: s.color }}>{s.name}</strong></p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {data.biodiversity.keyEcosystems.map(eco => {
+                    const sd = ecoScenarioData[eco.name]?.[s.id] || { status: eco.status, current: eco.current, outlook: "" };
+                    return (
+                      <div key={eco.name} className="glass-card p-4" style={{ borderLeft: `3px solid ${eco.color}` }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xl">{eco.icon}</span>
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>{eco.name}</p>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${statusColor(sd.status)}22`, color: statusColor(sd.status), border: `1px solid ${statusColor(sd.status)}44` }}>{sd.status}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>Tipping point:</strong> {eco.tippingPoint}</p>
+                        <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>State:</strong> {sd.current}</p>
+                        {sd.outlook && <p className="text-[11px] leading-relaxed pt-2" style={{ color: "var(--text-muted)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>{sd.outlook}</p>}
                       </div>
-                    </div>
-                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>Tipping point:</strong> {eco.tippingPoint}</p>
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}><strong style={{ color: "var(--text-faint)" }}>Current:</strong> {eco.current}</p>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+              );
+            })()}
 
             {/* Biodiversity index chart */}
             <div className="glass-card p-6 mb-8">
@@ -546,33 +594,105 @@ export default function Home() {
               <Stat label="Ocean pH" value={`${data.metrics.oceanAcidity_ph}`} sub="acidifying" color="var(--cyan)" />
             </div>
 
-            {/* Grid Mix */}
-            <div className="glass-card p-6 mb-8">
-              <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text)" }}>Global Electricity Grid Mix (2024 Baseline)</h3>
-              <div className="space-y-3">
-                {data.energy.gridMix2024.map(g => (
-                  <div key={g.source} className="flex items-center gap-4">
-                    <div className="w-28 text-right text-xs font-semibold" style={{ color: "var(--text)" }}>{g.source}</div>
-                    <div className="flex-1"><div className="h-4 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}><div className="h-full rounded-full" style={{ width: `${g.pct}%`, background: g.color, opacity: 0.8 }} /></div></div>
-                    <div className="w-12 text-right text-xs font-bold" style={{ color: g.color }}>{g.pct}%</div>
-                  </div>
-                ))}
+            {/* Grid Mix — scenario-aware */}
+            {(() => {
+              const gridMix2050: Record<string, { source: string; pct: number; color: string }[]> = {
+                aggressive: [
+                  { source: "Solar", pct: 42, color: "#f59e0b" }, { source: "Wind", pct: 32, color: "#06b6d4" }, { source: "Nuclear", pct: 12, color: "#8b5cf6" },
+                  { source: "Hydro", pct: 10, color: "#0ea5e9" }, { source: "Other Renewables", pct: 3, color: "#10b981" }, { source: "Natural Gas", pct: 1, color: "#94a3b8" },
+                  { source: "Coal", pct: 0, color: "#64748b" }, { source: "Oil", pct: 0, color: "#475569" },
+                ],
+                moderate: [
+                  { source: "Solar", pct: 35, color: "#f59e0b" }, { source: "Wind", pct: 28, color: "#06b6d4" }, { source: "Hydro", pct: 12, color: "#0ea5e9" },
+                  { source: "Nuclear", pct: 10, color: "#8b5cf6" }, { source: "Natural Gas", pct: 8, color: "#94a3b8" }, { source: "Other Renewables", pct: 5, color: "#10b981" },
+                  { source: "Coal", pct: 2, color: "#64748b" }, { source: "Oil", pct: 0, color: "#475569" },
+                ],
+                bau: [
+                  { source: "Natural Gas", pct: 26, color: "#94a3b8" }, { source: "Solar", pct: 22, color: "#f59e0b" }, { source: "Wind", pct: 16, color: "#06b6d4" },
+                  { source: "Coal", pct: 12, color: "#64748b" }, { source: "Hydro", pct: 12, color: "#0ea5e9" }, { source: "Nuclear", pct: 8, color: "#8b5cf6" },
+                  { source: "Other Renewables", pct: 3, color: "#10b981" }, { source: "Oil", pct: 1, color: "#475569" },
+                ],
+                worst: [
+                  { source: "Coal", pct: 25, color: "#64748b" }, { source: "Natural Gas", pct: 24, color: "#94a3b8" }, { source: "Solar", pct: 15, color: "#f59e0b" },
+                  { source: "Wind", pct: 11, color: "#06b6d4" }, { source: "Hydro", pct: 10, color: "#0ea5e9" }, { source: "Nuclear", pct: 6, color: "#8b5cf6" },
+                  { source: "Oil", pct: 5, color: "#475569" }, { source: "Other Renewables", pct: 4, color: "#10b981" },
+                ],
+              };
+              const mix = gridMix2050[s.id] || data.energy.gridMix2024;
+              return (
+              <div className="glass-card p-6 mb-8">
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Projected Electricity Grid Mix (2050)</h3>
+                <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>Under <strong style={{ color: s.color }}>{s.name}</strong></p>
+                <div className="space-y-3">
+                  {mix.map(g => (
+                    <div key={g.source} className="flex items-center gap-4">
+                      <div className="w-28 text-right text-xs font-semibold" style={{ color: "var(--text)" }}>{g.source}</div>
+                      <div className="flex-1"><div className="h-4 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}><div className="h-full rounded-full transition-all duration-500" style={{ width: `${g.pct}%`, background: g.color, opacity: 0.8 }} /></div></div>
+                      <div className="w-12 text-right text-xs font-bold" style={{ color: g.color }}>{g.pct}%</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+              );
+            })()}
 
-            {/* Emissions Breakdown */}
-            <div className="glass-card p-6 mb-8">
-              <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text)" }}>Emissions by Sector (2024 Baseline)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.energy.emissionsBreakdown.map(e => (
-                  <div key={e.sector} className="glass-card p-4" style={{ borderTop: `3px solid ${e.color}` }}>
-                    <p className="text-lg font-bold" style={{ color: e.color, fontFamily: "'Space Grotesk',sans-serif" }}>{e.pct}%</p>
-                    <p className="text-sm font-semibold mt-1" style={{ color: "var(--text)" }}>{e.sector}</p>
-                    <p className="text-xs mt-1 font-mono" style={{ color: "var(--text-faint)" }}>{e.gt} Gt CO\u2082/yr</p>
-                  </div>
-                ))}
+            {/* Emissions Breakdown — scenario-aware */}
+            {(() => {
+              const sectorData2050: Record<string, { sector: string; pct: number; gt: number; color: string; status: string; outlook: string }[]> = {
+                aggressive: [
+                  { sector: "Energy & Heat", pct: 0, gt: 0, color: "#f43f5e", status: "eliminated", outlook: "Fully decarbonized via renewables + storage + green hydrogen" },
+                  { sector: "Transport", pct: 0, gt: 0, color: "#f59e0b", status: "eliminated", outlook: "100% EV fleet + electrified rail + sustainable aviation fuel" },
+                  { sector: "Industry", pct: 15, gt: 0.5, color: "#64748b", status: "declining", outlook: "Green steel, cement CCS, circular manufacturing. Last sector to reach zero." },
+                  { sector: "Buildings", pct: 0, gt: 0, color: "#8b5cf6", status: "eliminated", outlook: "Full electrification + deep retrofit + heat pumps globally" },
+                  { sector: "Agriculture & Land Use", pct: 50, gt: 1.7, color: "#10b981", status: "declining", outlook: "Regenerative practices, reduced methane, reforestation offsets" },
+                  { sector: "Waste & Other", pct: 35, gt: 1.2, color: "#06b6d4", status: "declining", outlook: "Circular economy mandates, methane capture at 90% of landfills" },
+                ],
+                moderate: [
+                  { sector: "Energy & Heat", pct: 18, gt: 3.2, color: "#f43f5e", status: "declining", outlook: "88% renewables but gas peakers persist; developing nations lag" },
+                  { sector: "Transport", pct: 12, gt: 2.1, color: "#f59e0b", status: "declining", outlook: "80% EV adoption in developed nations, 50% globally; aviation still fossil" },
+                  { sector: "Industry", pct: 28, gt: 5.0, color: "#64748b", status: "stressed", outlook: "Some green steel, limited CCS. Heavy industry hardest to abate." },
+                  { sector: "Buildings", pct: 5, gt: 0.9, color: "#8b5cf6", status: "declining", outlook: "New buildings net-zero; retrofit backlog in developing nations" },
+                  { sector: "Agriculture & Land Use", pct: 22, gt: 3.9, color: "#10b981", status: "stressed", outlook: "Partial adoption of regenerative practices; deforestation slowed not stopped" },
+                  { sector: "Waste & Other", pct: 15, gt: 2.7, color: "#06b6d4", status: "declining", outlook: "Improved waste management, 60% methane capture" },
+                ],
+                bau: [
+                  { sector: "Energy & Heat", pct: 30, gt: 7.8, color: "#f43f5e", status: "critical", outlook: "36% fossil electricity. Coal declining but gas expanding as bridge fuel that never ends." },
+                  { sector: "Transport", pct: 18, gt: 4.7, color: "#f59e0b", status: "stressed", outlook: "50% EV globally but ICE fleet persists in developing nations; aviation untouched" },
+                  { sector: "Industry", pct: 23, gt: 6.0, color: "#64748b", status: "critical", outlook: "Minimal decarbonization. Steel, cement, chemicals still fossil-dependent." },
+                  { sector: "Buildings", pct: 6, gt: 1.6, color: "#8b5cf6", status: "stressed", outlook: "Slow retrofit pace. Gas heating persists in cold climates." },
+                  { sector: "Agriculture & Land Use", pct: 15, gt: 3.9, color: "#10b981", status: "critical", outlook: "Continued deforestation, rising methane, soil degradation worsening" },
+                  { sector: "Waste & Other", pct: 8, gt: 2.1, color: "#06b6d4", status: "stressed", outlook: "Growing waste volumes outpace capture improvements" },
+                ],
+                worst: [
+                  { sector: "Energy & Heat", pct: 32, gt: 12.8, color: "#f43f5e", status: "collapsed", outlook: "Return to coal under energy security pressures. New coal plants still commissioning." },
+                  { sector: "Transport", pct: 16, gt: 6.4, color: "#f59e0b", status: "critical", outlook: "30% EV. Supply chain disruptions halt transition. Aviation and shipping untouched." },
+                  { sector: "Industry", pct: 22, gt: 8.8, color: "#64748b", status: "collapsed", outlook: "No meaningful decarbonization. Industrial output rises with growing demand." },
+                  { sector: "Buildings", pct: 7, gt: 2.8, color: "#8b5cf6", status: "critical", outlook: "Energy poverty drives fossil heating. No retrofit investment at scale." },
+                  { sector: "Agriculture & Land Use", pct: 14, gt: 5.6, color: "#10b981", status: "collapsed", outlook: "Massive deforestation, peatland fires, soil collapse releasing stored carbon" },
+                  { sector: "Waste & Other", pct: 9, gt: 3.6, color: "#06b6d4", status: "critical", outlook: "Infrastructure breakdown in developing nations. Unmanaged waste rises." },
+                ],
+              };
+              const sectors = sectorData2050[s.id] || data.energy.emissionsBreakdown.map(e => ({ ...e, status: "baseline", outlook: "" }));
+              const totalGt = sectors.reduce((sum, e) => sum + e.gt, 0);
+              return (
+              <div className="glass-card p-6 mb-8">
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Emissions by Sector (2050 Projection)</h3>
+                <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>Under <strong style={{ color: s.color }}>{s.name}</strong> &mdash; total: <strong style={{ color: s.color }}>{totalGt.toFixed(1)} Gt CO\u2082/yr</strong> (vs 36.8 Gt baseline)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sectors.map(e => (
+                    <div key={e.sector} className="glass-card p-4" style={{ borderTop: `3px solid ${e.color}` }}>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-lg font-bold" style={{ color: e.color, fontFamily: "'Space Grotesk',sans-serif" }}>{e.gt} Gt</p>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${statusColor(e.status)}22`, color: statusColor(e.status), border: `1px solid ${statusColor(e.status)}44` }}>{e.status}</span>
+                      </div>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>{e.sector}</p>
+                      <p className="text-[11px] mt-2 leading-relaxed" style={{ color: "var(--text-muted)" }}>{e.outlook}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+              );
+            })()}
 
             {/* Historical Emissions */}
             <div className="glass-card p-6 mb-8">
@@ -743,28 +863,87 @@ export default function Home() {
               <p className="text-xs leading-relaxed mt-4" style={{ color: "var(--text-muted)" }}>{waterDesc[s.id]}</p>
             </div>
 
-            {/* Critical Minerals */}
-            <div className="glass-card p-6 mb-8">
-              <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Critical Minerals for the Energy Transition</h3>
-              <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>Demand growth and recycling rates for minerals essential to renewable infrastructure</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.resources.criticalMinerals.map(m => {
-                  const demandGrowth = Math.round((m.demand2040_kt / m.demand2024_kt - 1) * 100);
-                  return (
-                    <div key={m.mineral} className="glass-card p-4" style={{ borderTop: `3px solid ${m.color}` }}>
-                      <p className="text-sm font-semibold" style={{ color: m.color }}>{m.mineral}</p>
-                      <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                        <div><p style={{ color: "var(--text-faint)" }}>2024 demand</p><p className="font-bold" style={{ color: "var(--text)" }}>{fmtK(m.demand2024_kt)} kt</p></div>
-                        <div><p style={{ color: "var(--text-faint)" }}>2040 demand</p><p className="font-bold" style={{ color: "var(--text)" }}>{fmtK(m.demand2040_kt)} kt</p></div>
-                        <div><p style={{ color: "var(--text-faint)" }}>Growth</p><p className="font-bold" style={{ color: m.color }}>+{demandGrowth}%</p></div>
-                        <div><p style={{ color: "var(--text-faint)" }}>Recycling</p><p className="font-bold" style={{ color: m.recyclingRate >= 20 ? "var(--emerald)" : "var(--amber)" }}>{m.recyclingRate}%</p></div>
+            {/* Critical Minerals — scenario-aware */}
+            {(() => {
+              const mineralScenario: Record<string, Record<string, { demand2050: number; recycling2050: number; status: string; outlook: string }>> = {
+                Lithium: {
+                  aggressive: { demand2050: 4800, recycling2050: 45, status: "recovering", outlook: "Massive demand met through diversified mining, ocean extraction, and 45% recycling. Supply chains secured via international mineral agreements." },
+                  moderate: { demand2050: 3500, recycling2050: 25, status: "stressed", outlook: "High demand, moderate recycling. Geopolitical tensions over Congo and Chile supplies. Sodium-ion alternatives absorb 20% of battery market." },
+                  bau: { demand2050: 2200, recycling2050: 12, status: "critical", outlook: "Slower transition means lower demand, but recycling neglected. Supply concentrated in few nations. Price volatility disrupts deployment." },
+                  worst: { demand2050: 1200, recycling2050: 5, status: "declining", outlook: "Stalled transition reduces demand. What mining exists is environmentally destructive. Recycling infrastructure never built at scale." },
+                },
+                Cobalt: {
+                  aggressive: { demand2050: 800, recycling2050: 55, status: "recovering", outlook: "Cobalt-free battery chemistries reduce demand. What\u2019s needed is 55% recycled. Ethical mining standards enforced globally." },
+                  moderate: { demand2050: 600, recycling2050: 30, status: "stressed", outlook: "Partial shift to cobalt-free batteries. DRC dependency reduced but not eliminated. Child labor concerns persist in artisanal mines." },
+                  bau: { demand2050: 450, recycling2050: 15, status: "critical", outlook: "Cobalt remains bottleneck. DRC instability creates supply shocks. Recycling rates too low to matter at scale." },
+                  worst: { demand2050: 250, recycling2050: 5, status: "declining", outlook: "Low transition demand. Mining continues under worst practices. Resource nationalism and conflict over deposits." },
+                },
+                Copper: {
+                  aggressive: { demand2050: 55000, recycling2050: 50, status: "stressed", outlook: "The energy transition\u2019s biggest mineral bottleneck. 50% recycling essential. New deposits in deep sea and recycled urban mines. Demand highest of any scenario." },
+                  moderate: { demand2050: 42000, recycling2050: 30, status: "stressed", outlook: "Significant demand growth. Recycling helps but new mines still needed. Chile, Peru, DRC face environmental pressure from expansion." },
+                  bau: { demand2050: 32000, recycling2050: 18, status: "critical", outlook: "Lower renewable deployment means less copper demand, but also less recycling investment. Aging grid infrastructure degrades." },
+                  worst: { demand2050: 25000, recycling2050: 10, status: "critical", outlook: "Stagnant demand reflects stalled transition. Copper theft and illegal mining rise as governance weakens. Infrastructure maintenance neglected." },
+                },
+                Nickel: {
+                  aggressive: { demand2050: 12000, recycling2050: 40, status: "recovering", outlook: "Battery demand high but met through Indonesian expansion + 40% recycling. High-pressure acid leaching made cleaner. Supply sufficient." },
+                  moderate: { demand2050: 8500, recycling2050: 22, status: "stressed", outlook: "Moderate demand. Indonesia dominates supply. Environmental damage from laterite processing a concern. Recycling growing but slow." },
+                  bau: { demand2050: 5500, recycling2050: 12, status: "stressed", outlook: "Lower demand, lower recycling. Nickel used in stainless steel more than batteries. Indonesian deforestation for mining continues." },
+                  worst: { demand2050: 3000, recycling2050: 5, status: "declining", outlook: "Minimal battery demand. Nickel mining concentrated in environmentally destructive laterite operations. Little incentive to recycle." },
+                },
+                "Rare Earths": {
+                  aggressive: { demand2050: 950, recycling2050: 35, status: "recovering", outlook: "Wind turbine and EV motor demand peaks then stabilizes as recycling reaches 35%. Non-China sources developed: Australia, Canada, Greenland." },
+                  moderate: { demand2050: 700, recycling2050: 18, status: "stressed", outlook: "China controls 60% of processing. Western alternatives developing but 5\u201310 years behind. Recycling from e-waste grows slowly." },
+                  bau: { demand2050: 500, recycling2050: 8, status: "critical", outlook: "China dominance 80%+. Geopolitical weaponization of supply. Western nations scramble for alternatives too late." },
+                  worst: { demand2050: 350, recycling2050: 3, status: "critical", outlook: "Supply chain fragmentation. Export bans and resource nationalism. Critical defense and technology applications disrupted." },
+                },
+                Silicon: {
+                  aggressive: { demand2050: 25000, recycling2050: 40, status: "thriving", outlook: "Solar panel demand drives massive scaling. Recycling of end-of-life panels reaches 40%. Silicon abundant \u2014 manufacturing capacity is the bottleneck, not reserves." },
+                  moderate: { demand2050: 18000, recycling2050: 20, status: "recovering", outlook: "Strong solar growth. First generation of panels reaching end-of-life creates recycling opportunity. Supply adequate." },
+                  bau: { demand2050: 11000, recycling2050: 8, status: "stressed", outlook: "Moderate solar growth. Panel waste becomes environmental problem as recycling infrastructure lags. Landfill concerns." },
+                  worst: { demand2050: 6000, recycling2050: 3, status: "declining", outlook: "Slow solar deployment. Manufacturing shifts driven by cost, not climate. Panel waste unmanaged." },
+                },
+              };
+              return (
+              <div className="glass-card p-6 mb-8">
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Critical Minerals for the Energy Transition (2050)</h3>
+                <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>Projected under <strong style={{ color: s.color }}>{s.name}</strong> &mdash; demand, recycling rates, and supply chain outlook</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {data.resources.criticalMinerals.map(m => {
+                    const ms = mineralScenario[m.mineral]?.[s.id];
+                    if (!ms) {
+                      const demandGrowth = Math.round((m.demand2040_kt / m.demand2024_kt - 1) * 100);
+                      return (
+                        <div key={m.mineral} className="glass-card p-4" style={{ borderTop: `3px solid ${m.color}` }}>
+                          <p className="text-sm font-semibold" style={{ color: m.color }}>{m.mineral}</p>
+                          <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                            <div><p style={{ color: "var(--text-faint)" }}>2024 demand</p><p className="font-bold" style={{ color: "var(--text)" }}>{fmtK(m.demand2024_kt)} kt</p></div>
+                            <div><p style={{ color: "var(--text-faint)" }}>2040 demand</p><p className="font-bold" style={{ color: "var(--text)" }}>{fmtK(m.demand2040_kt)} kt</p></div>
+                            <div><p style={{ color: "var(--text-faint)" }}>Growth</p><p className="font-bold" style={{ color: m.color }}>+{demandGrowth}%</p></div>
+                            <div><p style={{ color: "var(--text-faint)" }}>Recycling</p><p className="font-bold" style={{ color: m.recyclingRate >= 20 ? "var(--emerald)" : "var(--amber)" }}>{m.recyclingRate}%</p></div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={m.mineral} className="glass-card p-4" style={{ borderTop: `3px solid ${m.color}` }}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-semibold" style={{ color: m.color }}>{m.mineral}</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${statusColor(ms.status)}22`, color: statusColor(ms.status), border: `1px solid ${statusColor(ms.status)}44` }}>{ms.status}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                          <div><p style={{ color: "var(--text-faint)" }}>2024 demand</p><p className="font-bold" style={{ color: "var(--text)" }}>{fmtK(m.demand2024_kt)} kt</p></div>
+                          <div><p style={{ color: "var(--text-faint)" }}>2050 demand</p><p className="font-bold" style={{ color: s.color }}>{fmtK(ms.demand2050)} kt</p></div>
+                          <div><p style={{ color: "var(--text-faint)" }}>Recycling 2024</p><p className="font-bold" style={{ color: m.recyclingRate >= 20 ? "var(--emerald)" : "var(--amber)" }}>{m.recyclingRate}%</p></div>
+                          <div><p style={{ color: "var(--text-faint)" }}>Recycling 2050</p><p className="font-bold" style={{ color: ms.recycling2050 >= 25 ? "var(--emerald)" : ms.recycling2050 >= 15 ? "var(--amber)" : "var(--rose)" }}>{ms.recycling2050}%</p></div>
+                        </div>
+                        <p className="text-[11px] mt-3 leading-relaxed pt-2" style={{ color: "var(--text-muted)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>{ms.outlook}</p>
                       </div>
-                      <div className="mt-2"><p className="text-[10px]" style={{ color: "var(--text-faint)" }}>Reserves: {fmtK(m.reserves_mt * 1000)} kt</p></div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+              );
+            })()}
 
             {/* Summary */}
             <div className="glass-card p-6" style={{ borderLeft: `3px solid ${s.color}` }}>
@@ -817,30 +996,70 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Milestones */}
-            <div className="space-y-4 mb-8">
-              {data.milestones.map((m, i) => {
-                const colors = ["var(--teal)", "var(--emerald)", "var(--sky)", "var(--violet)", "var(--amber)", "var(--rose)"];
-                const c = colors[i % colors.length];
-                return (
-                  <div key={i} className="glass-card p-5 flex gap-4" style={{ borderLeft: `3px solid ${c}` }}>
-                    <div className="flex-shrink-0 w-20 text-center">
-                      <p className="text-lg font-bold" style={{ color: c, fontFamily: "'Space Grotesk',sans-serif" }}>{m.year}</p>
+            {/* Milestones — scenario-aware */}
+            {(() => {
+              const scenarioMilestones: Record<string, { year: number; title: string; items: string[] }[]> = {
+                aggressive: [
+                  { year: 2027, title: "Emergency Climate Mobilization", items: ["Global climate emergency declarations trigger wartime-scale investment", "Carbon border adjustments enacted by G20", "Fossil fuel subsidies eliminated in 40+ countries", "Trillion Tree Initiative passes 500B planted"] },
+                  { year: 2030, title: "Emissions Peak Broken", items: ["Global emissions 45% below 2025 peak", "Renewables cross 50% of global electricity", "30x30 biodiversity target met", "Last coal plant closes in EU, Japan, South Korea"] },
+                  { year: 2035, title: "Net-Zero Advanced Economies", items: ["US, EU, Japan, Australia reach net-zero electricity", "EV fleet passes 80% of new sales globally", "Direct air capture removes 5 Gt CO\u2082/year", "Amazon reforestation reaches 5% of lost area"] },
+                  { year: 2040, title: "Global Net-Zero in Sight", items: ["Global emissions below 5 Gt CO\u2082/year", "Renewables at 90% of electricity", "Sea level rise decelerating", "Biodiversity index recovering above baseline"] },
+                  { year: 2045, title: "Net-Negative Begins", items: ["Global emissions go net-negative", "Atmospheric CO\u2082 begins sustained decline", "Forest cover passes 40% of land surface", "Ocean acidification stabilizing"] },
+                  { year: 2050, title: "Climate Recovery Trajectory", items: ["Temperature stabilized at +1.2\u00b0C, beginning to decline", "CO\u2082 at 366 ppm and falling", "Biodiversity index at 125% of 2026 baseline", "99% renewable electricity worldwide"] },
+                ],
+                moderate: [
+                  { year: 2027, title: "Paris Pledges Strengthened", items: ["Updated NDCs with binding targets and penalties", "Green finance reaches $1T/year", "Coal phase-out accelerates in developed nations", "EV adoption crosses 30% of new car sales"] },
+                  { year: 2030, title: "Partial Progress", items: ["Emissions 25% below peak \u2014 short of 45% target", "Renewables at 42% of global electricity", "Deforestation halved from 2020 levels", "30x30 biodiversity target 60% met"] },
+                  { year: 2035, title: "Transition Accelerates", items: ["Developed nations reach 70% renewable electricity", "EV fleet reaches 60% of new sales", "Natural gas begins decline in power sector", "Water stress peaks and begins slow decline"] },
+                  { year: 2040, title: "Mixed Results", items: ["Global emissions at 18 Gt/year \u2014 half of peak", "Temperature passes +1.5\u00b0C guardrail", "Amazon narrowly avoids tipping point", "Developing nations accelerate transition with international support"] },
+                  { year: 2045, title: "Late-Stage Push", items: ["Renewables cross 80% globally", "Carbon capture scaling but behind schedule", "Sea level rise at 110mm and accelerating slowly", "Food systems adapting but vulnerable"] },
+                  { year: 2050, title: "Stabilizing but Fragile", items: ["Temperature at +1.8\u00b0C \u2014 approaching 2\u00b0C limit", "CO\u2082 at 395 ppm and declining slowly", "Biodiversity index at 94 \u2014 stabilized", "88% renewable electricity"] },
+                ],
+                bau: [
+                  { year: 2027, title: "Pledges Without Action", items: ["NDCs updated on paper but implementation lags", "Fossil fuel subsidies persist at $500B+/year", "Green investment grows but below required pace", "Coal phase-out stalls outside Europe"] },
+                  { year: 2030, title: "Targets Missed", items: ["Emissions only 10% below peak", "Renewables at 35% \u2014 growing but too slowly", "Deforestation continues at 10M ha/year", "First major coral reef system declared functionally extinct"] },
+                  { year: 2035, title: "Tipping Points Approached", items: ["Amazon deforestation passes 20% threshold", "Arctic ice-free summers become regular", "Extreme weather events double from 2020 frequency", "Climate migration reaches 50M displaced/year"] },
+                  { year: 2040, title: "Cascading Impacts", items: ["Temperature passes +2.5\u00b0C", "Amazon dieback visibly underway", "Multiple breadbasket failures in single year", "Over 500M face food insecurity"] },
+                  { year: 2045, title: "Adaptation Overwhelmed", items: ["Sea level rise at 250mm, accelerating", "Water stress affects 50% of population", "Fisheries collapse in tropical waters", "Climate refugee crisis strains international systems"] },
+                  { year: 2050, title: "Locked-In Crisis", items: ["Temperature at +3\u00b0C with no flattening", "CO\u2082 at 551 ppm and still rising", "Biodiversity index at 52 \u2014 half of baseline gone", "1 billion+ people in hunger"] },
+                ],
+                worst: [
+                  { year: 2027, title: "Coordination Collapse", items: ["Paris Agreement effectively abandoned by major emitters", "Fossil fuel expansion resumes under energy security pretext", "Climate finance pledges unfulfilled", "Deforestation accelerates in Amazon, Congo, Southeast Asia"] },
+                  { year: 2030, title: "Feedback Loops Visible", items: ["Permafrost thaw releasing measurable methane", "Emissions still rising \u2014 no peak in sight", "Arctic ice loss accelerating albedo feedback", "Extreme weather becomes the new normal"] },
+                  { year: 2035, title: "Tipping Points Breached", items: ["Amazon dieback irreversible \u2014 savannification begun", "Boreal forest mega-fires become annual", "Natural carbon release rivals 10% of human emissions", "Temperature passes +3\u00b0C"] },
+                  { year: 2040, title: "Systems Failure", items: ["Multiple simultaneous breadbasket failures", "Coastal megacity evacuations begin \u2014 100M+ displaced", "Water wars in Middle East, Central Asia, North Africa", "Global food prices 5x 2020 levels"] },
+                  { year: 2045, title: "Civilizational Stress", items: ["Temperature passes +4\u00b0C", "Sea level rise at 700mm+, accelerating rapidly", "Climate migration at 500M+ people", "International cooperation collapsed under resource competition"] },
+                  { year: 2050, title: "The Reckoning", items: ["Temperature at +4.6\u00b0C \u2014 feedback loops self-reinforcing", "CO\u2082 at 790 ppm with no plateau", "81% of monitored biodiversity gone", "Famine, water crisis, and displacement define the era"] },
+                ],
+              };
+              const milestones = scenarioMilestones[s.id] || data.milestones;
+              return (
+              <div className="space-y-4 mb-8">
+                <p className="text-xs mb-2" style={{ color: "var(--text-faint)" }}>Key milestones under <strong style={{ color: s.color }}>{s.name}</strong></p>
+                {milestones.map((m, i) => {
+                  const colors = ["var(--teal)", "var(--emerald)", "var(--sky)", "var(--violet)", "var(--amber)", "var(--rose)"];
+                  const c = colors[i % colors.length];
+                  return (
+                    <div key={i} className="glass-card p-5 flex gap-4" style={{ borderLeft: `3px solid ${c}` }}>
+                      <div className="flex-shrink-0 w-20 text-center">
+                        <p className="text-lg font-bold" style={{ color: c, fontFamily: "'Space Grotesk',sans-serif" }}>{m.year}</p>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold mb-2" style={{ color: "var(--text)" }}>{m.title}</h4>
+                        <ul className="space-y-1">
+                          {m.items.map((item, j) => (
+                            <li key={j} className="text-xs flex items-start gap-2" style={{ color: "var(--text-muted)" }}>
+                              <span style={{ color: c }}>{"\u2022"}</span>{item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold mb-2" style={{ color: "var(--text)" }}>{m.title}</h4>
-                      <ul className="space-y-1">
-                        {m.items.map((item, j) => (
-                          <li key={j} className="text-xs flex items-start gap-2" style={{ color: "var(--text-muted)" }}>
-                            <span style={{ color: c }}>{"\u2022"}</span>{item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+              );
+            })()}
 
             {/* Temperature trajectory */}
             <div className="glass-card p-6 mb-8">
