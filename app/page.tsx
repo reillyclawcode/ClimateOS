@@ -153,6 +153,23 @@ export default function Home() {
         {/* ════════════════════ OVERVIEW ════════════════════ */}
         {tab === "overview" && (() => {
           const s = data.scenarios.find(sc => sc.id === activeScenario)!;
+
+          /* ── Baseline Scorecard ── */
+          const climateScores = [
+            { domain: "Temperature Control", score: 58, trend: "declining" as const, icon: "\u{1F321}\uFE0F", color: "#f43f5e", note: `+${data.metrics.globalTemp2024}\u00b0C of 1.5\u00b0C budget used` },
+            { domain: "Emissions", score: 32, trend: "stable" as const, icon: "\u{1F32B}\uFE0F", color: "#f59e0b", note: `${data.metrics.annualEmissions_gt} Gt/yr \u2014 need <25 Gt by 2030` },
+            { domain: "Energy Transition", score: 45, trend: "improving" as const, icon: "\u26A1", color: "#38bdf8", note: `${fmtK(data.metrics.renewableCapacity_gw)} GW installed, ~30% of electricity` },
+            { domain: "Biodiversity", score: 40, trend: "declining" as const, icon: "\u{1F33F}", color: "#10b981", note: `Index ${data.metrics.biodiversityIndex2024}, ${data.biodiversity.protectedLandPct}% land protected` },
+            { domain: "Ocean Health", score: 35, trend: "declining" as const, icon: "\u{1F30A}", color: "#06b6d4", note: `pH ${data.metrics.oceanAcidity_ph}, ${data.biodiversity.coralReefHealth}% coral health` },
+            { domain: "Resource Security", score: 42, trend: "declining" as const, icon: "\u{1F4A7}", color: "#a78bfa", note: `${data.metrics.waterStressPct}% water-stressed, ${data.resources.foodWastePct}% food waste` },
+          ];
+          const overallScore = Math.round(climateScores.reduce((a, c) => a + c.score, 0) / climateScores.length);
+          const letterGrade = (sc: number) => sc >= 93 ? "A" : sc >= 85 ? "A-" : sc >= 80 ? "B+" : sc >= 73 ? "B" : sc >= 68 ? "B-" : sc >= 63 ? "C+" : sc >= 58 ? "C" : sc >= 53 ? "C-" : sc >= 48 ? "D+" : sc >= 43 ? "D" : sc >= 38 ? "D-" : "F";
+          const gradeColor = (sc: number) => sc >= 73 ? "#10b981" : sc >= 53 ? "#f59e0b" : sc >= 38 ? "#fb923c" : "#f43f5e";
+          const trendArrow = (t: "improving" | "stable" | "declining") => t === "improving" ? "\u2191" : t === "stable" ? "\u2192" : "\u2193";
+          const trendColor = (t: "improving" | "stable" | "declining") => t === "improving" ? "#10b981" : t === "stable" ? "#f59e0b" : "#f43f5e";
+          const projectedScores: Record<string, number> = { aggressive: 88, moderate: 65, bau: 28, worst: 12 };
+
           const overviewStats2050: Record<string, { temp: string; co2: string; emissions: string; renewPct: string; forest: string; water: string; displaced: string; finance: string }> = {
             aggressive: { temp: "+1.2", co2: "366", emissions: "3.4", renewPct: "99", forest: "42.3", water: "15", displaced: "5", finance: "5.2" },
             moderate: { temp: "+1.8", co2: "395", emissions: "17.8", renewPct: "88", forest: "35.3", water: "25", displaced: "35", finance: "3.5" },
@@ -207,6 +224,50 @@ export default function Home() {
           return (
           <section>
             <Heading icon={"\u{1F4CA}"} title="Climate Dashboard" sub="Planetary indicators, tipping points, and scenario projections \u2014 toggle to compare futures" />
+
+            {/* ── Today's Climate Score ── */}
+            <div className="glass-card p-6 mb-8" style={{ borderTop: `3px solid ${gradeColor(overallScore)}` }}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-6">
+                <div className="relative w-28 h-28 flex-shrink-0 mx-auto sm:mx-0">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="42" fill="none" stroke={gradeColor(overallScore)} strokeWidth="8" strokeLinecap="round" strokeDasharray={`${overallScore * 2.64} 264`} />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold" style={{ color: gradeColor(overallScore), fontFamily: "'Space Grotesk',sans-serif" }}>{letterGrade(overallScore)}</span>
+                    <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{overallScore}/100</span>
+                  </div>
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--text)" }}>Today&apos;s Climate Score</h3>
+                  <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                    A composite assessment of Earth&apos;s climate health across 6 domains, graded on current data (2024 baseline). Overall trend: <strong style={{ color: "#f43f5e" }}>declining</strong>.
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${gradeColor(projectedScores[s.id])}22`, color: gradeColor(projectedScores[s.id]), border: `1px solid ${gradeColor(projectedScores[s.id])}44` }}>
+                      2050 under {s.name}: {letterGrade(projectedScores[s.id])} ({projectedScores[s.id]}/100)
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(244,63,94,0.12)", color: "#f43f5e", border: "1px solid rgba(244,63,94,0.3)" }}>
+                      If trends continue: F (28/100) by 2050
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {climateScores.map(cs => (
+                  <div key={cs.domain} className="glass-card p-3 text-center">
+                    <span className="text-lg">{cs.icon}</span>
+                    <p className="text-xs font-semibold mt-1" style={{ color: "var(--text)" }}>{cs.domain}</p>
+                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                      <span className="text-lg font-bold" style={{ color: gradeColor(cs.score), fontFamily: "'Space Grotesk',sans-serif" }}>{letterGrade(cs.score)}</span>
+                      <span className="text-sm font-bold" style={{ color: trendColor(cs.trend) }}>{trendArrow(cs.trend)}</span>
+                    </div>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>{cs.score}/100</p>
+                    <p className="text-[9px] mt-1 leading-tight" style={{ color: "var(--text-muted)" }}>{cs.note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Scenario selector */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
