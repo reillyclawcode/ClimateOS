@@ -43,7 +43,7 @@ npm run dev
 
 ClimateOS is part of the AI Civilization research ecosystem:
 
-- [Simulation Dashboard](https://simulation-tau-dun.vercel.app/) — Branching futures, structural metrics, 50-year horizon
+- [Simulation Dashboard](https://simulation-brown.vercel.app/) — Branching futures, structural metrics, 50-year horizon
 - [TransitionOS](https://transition-os-beta.vercel.app/) — Workforce transitions, reskilling, income bridges
 - [CivilizationOS](https://civilization-os-3nlf.vercel.app/) — Resident journeys, civic dividends, benefits, KPIs
 - [GovernanceOS](https://civilization-os-ashy.vercel.app/) — Charter frameworks, assemblies, audit tracking
